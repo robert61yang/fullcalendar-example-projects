@@ -3,7 +3,8 @@ import { hashById } from './utils'
 
 export default combineReducers({
   weekendsVisible,
-  eventsById
+  eventsById,
+  formVisible
 })
 
 function weekendsVisible(weekendsVisible = true, action) {
@@ -37,5 +38,55 @@ function eventsById(eventsById = {}, action) {
 
     default:
       return eventsById
+  }
+}
+
+const initForm = { 
+  formvisible: false,
+  start: null,
+  end: null,
+  allday: null,
+  inputvalue: '',
+  group: '1F'
+}
+
+function formVisible(formVisible = initForm, action){
+  switch(action.type) {
+    case 'SHOW_FORM':
+      return {
+        ...formVisible,
+        formvisible: action.formvisible,
+        start: action.start,
+        end: action.end,
+        allday: action.allday
+      }
+    case 'HIDE_FORM':
+      return {
+        ...formVisible,
+        formvisible: action.formvisible,
+        start: action.start,
+        end: action.end,
+        allday: action.allday
+      }
+    case 'INPUT':
+      return {
+        ...formVisible,
+        inputvalue: action.inputvalue
+      }
+    case 'GROUP':
+      return{
+        ...formVisible,
+        group: action.group
+      }
+
+    default:
+      return {
+        formvisible: false,
+        start: '',
+        end: '',
+        allday: false,
+        inputvalue: ' ',
+        group: '1F'
+      }
   }
 }

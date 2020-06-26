@@ -53,6 +53,40 @@ export default {
         })
       })
     }
-  }
+  },
 
+  showForm(start, end, allday){
+    return{
+      type: 'SHOW_FORM',
+      formvisible: true,
+      start: start,
+      end: end,
+      allday: allday
+    }
+  },
+
+  hideForm(){
+    return{
+      type: 'HIDE_FORM',
+      formvisible: false,
+      start: '',
+      end: '',
+      allday: false,
+      group: '1F'
+    }
+  },
+
+  inPut(value){
+    return{
+      type: 'INPUT',
+      inputvalue: value
+    }
+  },
+
+  selectGroup(value){
+    return{
+      type: 'GROUP',
+      group: value
+    }
+  }
 }

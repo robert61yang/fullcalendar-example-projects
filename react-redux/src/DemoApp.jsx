@@ -7,15 +7,32 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import actionCreators from './actions'
 import { getHashValues } from './utils'
+import { Form, Input, Button, Label, FormGroup } from 'reactstrap'
 
 class DemoApp extends React.Component {
+
+  calendarRef = React.createRef();
 
   render() {
     return (
       <div className='demo-app'>
         {this.renderSidebar()}
         <div className='demo-app-main'>
+        { this.props.formvisible ? 
+          <Form className='form-inline justify-content-center' onSubmit={this.handleSubmit.bind(this)}>
+            <Label>租借用途</Label>
+            <Input type='text' value={this.props.inputvalue} onChange={this.handleInputChange.bind(this)}></Input>  
+            <Label for="exampleSelect">Select</Label>
+            <Input type="select" name="select" id="exampleSelect" onChange={this.handleOptionChange.bind(this)}>
+            <option value = '1F'>會議室</option>
+            <option value = '2F'>橘廳</option>
+            <option value = '3F'>書房</option>
+            </Input>
+            <Button>click</Button>
+          </Form>
+          : null }
           <FullCalendar
+            ref={this.calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             headerToolbar={{
               left: 'prev,next today',
@@ -23,10 +40,19 @@ class DemoApp extends React.Component {
               right: 'dayGridMonth,timeGridWeek,timeGridDay'
             }}
             initialView='dayGridMonth'
-            editable={true}
+            height='60%'
+            allDaySlot={false}
+            editable={false}
+            eventOrder="groupId,startStr,-duration,allDay,title"
+            slotEventOverlap={false}
+            longPressDelay={300}
+            eventOverlap={false}
             selectable={true}
+            unselectAuto={false}
             selectMirror={true}
             dayMaxEvents={true}
+            eventBorderColor='white'
+            fixedWeekCount={false}
             weekends={this.props.weekendsVisible}
             datesSet={this.handleDates}
             select={this.handleDateSelect}
@@ -73,29 +99,80 @@ class DemoApp extends React.Component {
     )
   }
 
+  handleInputChange(e) {
+    this.props.inPut(e.target.value)
+  }
+
+  handleOptionChange(e){
+    this.props.selectGroup(e.target.value)
+  }
+
+  handleSubmit(e) {
+    e.preventDefault();
+
+    let calendarApi = this.calendarRef.current.getApi();
+
+    let events = this.props.events;
+    var i;
+    for(i=0;i<events.length;i+=1){
+      console.log(events[i]);
+      if((this.props.group==events[i].groupId)&&(((this.props.start>=events[i].start)&&(this.props.start<=events[i].end))||((this.props.start<=events[i].start)&&(this.props.end>=events[i].start)))){
+        alert('該時段場地已經被借走囉');
+        this.props.hideForm();
+        calendarApi.unselect();
+        return;
+      }
+    }
+
+    let color = (this.props.group=='1F')? '#99d3df': (this.props.group=='2F')? '#88bbd6' : (this.props.group=='3F')? '#c7d8c6' : '#ffffff';
+
+    calendarApi.addEvent({ // will render immediately. will call handleEventAdd
+      title: this.props.inputvalue,
+      start: this.props.start,
+      end: this.props.end,
+      allDay: this.props.allday,
+      diaplay: 'block',
+      groupId: this.props.group,
+      backgroundColor: color
+    }, true)
+
+    this.props.hideForm();
+    calendarApi.unselect();
+  }
+
   // handlers for user actions
   // ------------------------------------------------------------------------------------------
 
   handleDateSelect = (selectInfo) => {
-    let calendarApi = selectInfo.view.calendar
-    let title = prompt('Please enter a new title for your event')
+    let calendarApi = selectInfo.view.calendar;
+    if(selectInfo.view.type=='dayGridMonth'){
+      calendarApi.changeView('timeGridDay', selectInfo.startStr);
+    }else{
+      this.props.showForm(selectInfo.startStr, selectInfo.endStr, selectInfo.allDay);
+    }
+    //let title = prompt('Please enter a new title for your event')
 
-    calendarApi.unselect() // clear date selection
+     // clear date selection
 
+    /*
     if (title) {
       calendarApi.addEvent({ // will render immediately. will call handleEventAdd
         title,
+        overlap: false,
+        textcolor: 'yellow',
         start: selectInfo.startStr,
         end: selectInfo.endStr,
         allDay: selectInfo.allDay
       }, true) // temporary=true, will get overwritten when reducer gives new events
-    }
+    }*/
   }
 
   handleEventClick = (clickInfo) => {
-    if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
+    /*if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
       clickInfo.event.remove() // will render immediately. will call handleEventRemove
-    }
+    }*/
+    let calendarApi = this.calendarRef.current.getApi()
+    calendarApi.changeView('timeGridDay');
   }
 
   // handlers that initiate reads/writes via the 'action' props
@@ -163,7 +240,13 @@ function mapStateToProps() {
   return (state) => {
     return {
       events: getEventArray(state),
-      weekendsVisible: state.weekendsVisible
+      weekendsVisible: state.weekendsVisible,
+      start: state.formVisible.start,
+      end: state.formVisible.end,
+      allday: state.formVisible.allday,
+      formvisible: state.formVisible.formvisible,
+      inputvalue: state.formVisible.inputvalue,
+      group: state.formVisible.group
     }
   }
 }
